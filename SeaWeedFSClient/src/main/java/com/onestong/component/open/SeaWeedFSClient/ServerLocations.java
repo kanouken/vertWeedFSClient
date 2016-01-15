@@ -16,9 +16,15 @@ public class ServerLocations {
 
 	public class ServerLocation {
 
+		public ServerLocation(String publicUrl, String url) {
+			super();
+			this.publicUrl = publicUrl;
+			this.url = url;
+		}
+
 		String publicUrl;
 		String url;
-
+		
 		public String getPublicUrl() {
 			return publicUrl;
 		}
