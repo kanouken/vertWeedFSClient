@@ -6,6 +6,7 @@ import com.onestong.component.open.SeaWeedFSClient.ServerLocations.ServerLocatio
 
 import io.netty.handler.codec.http.HttpHeaders;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -35,25 +36,25 @@ public class WeedFSClient {
 
 	public static void main(String[] args) {
 		Vertx vertx = Vertx.vertx();
-		vertx.fileSystem().readFile("/Users/xnq/Documents/tmp/7.jpg",file->{
+		vertx.fileSystem().readFile("/Users/xnq/Documents/tmp/7.jpg", file -> {
 			System.out.println(file.result().length());
-			
-			new WeedFSClient("182.254.223.219", "9333").upload(file.result(), handler->{
-				if(handler.succeeded()){
+
+			new WeedFSClient("182.254.223.219", "9333").upload(file.result(), handler -> {
+				if (handler.succeeded()) {
 					System.out.println(handler.result());
-				}else{
+				} else {
 					System.out.println(handler.cause());
 				}
-			});;
+			});
+			;
 		});
 	}
-	
+
 	public void upload(Buffer file, Handler<AsyncResult<Buffer>> handler) {
 		if (file == null || file.length() == 0) {
 			handler.handle(Future.failedFuture(new IllegalArgumentException("file cannot be empty")));
 		}
-		Vertx vert = Vertx.vertx();
-		HttpClient client = vert.createHttpClient();
+		HttpClient client = Vertx.currentContext().owner().createHttpClient();
 		// 1. send assign request and get fid
 		client.requestAbs(HttpMethod.GET, "http://" + this.masterAddress + ":" + this.masterPort + "/dir/assign",
 				response -> {
@@ -71,10 +72,11 @@ public class WeedFSClient {
 							request.handler(rs -> {
 								rs.bodyHandler(bf -> {
 									JsonObject tmp = new JsonObject(bf.toString());
-									if(!tmp.containsKey("error")){
+									if (!tmp.containsKey("error")) {
 										handler.handle(Future.succeededFuture(Buffer.buffer(assignedInfo.getFid())));
-									}else{
-										handler.handle(Future.failedFuture(new IllegalArgumentException(bf.toString())));
+									} else {
+										handler.handle(
+												Future.failedFuture(new IllegalArgumentException(bf.toString())));
 									}
 								});
 							});
@@ -123,6 +125,7 @@ public class WeedFSClient {
 		buffer.appendString(endBoundary);
 		return buffer;
 	}
+
 	/*
 	 * example: fid = 3,01637037d6 write file to local file
 	 */
@@ -132,15 +135,12 @@ public class WeedFSClient {
 		}
 		String volumnId = fid.split(",")[0];
 		// 1. send quest to get volume address
-
-		Vertx vertx = Vertx.vertx();
-
-		HttpClient client = vertx.createHttpClient();
-
+		HttpClient client = Vertx.currentContext().owner().createHttpClient();
 		client.requestAbs(HttpMethod.GET,
 				"http://" + this.masterAddress + ":" + this.masterPort + "/" + "dir/lookup?volumeId=" + volumnId,
 				resHandler -> {
 					if (resHandler.statusCode() == 200) {
+
 						resHandler.bodyHandler(by -> {
 							// {"volumeId":"5","locations":[{"url":"127.0.0.1:8080","publicUrl":"127.0.0.1:8080"}]}
 							JsonObject json = new JsonObject(by.toString());
@@ -148,27 +148,26 @@ public class WeedFSClient {
 							locations = new ServerLocations();
 							locations.locations = new ArrayList<ServerLocation>();
 							for (int i = 0; i < _locations.size(); i++) {
-								locations.locations
-										.add( locations.new ServerLocation(_locations.getJsonObject(i).getString("publicUrl"),
+								locations.locations.add(
+										locations.new ServerLocation(_locations.getJsonObject(i).getString("publicUrl"),
 												_locations.getJsonObject(i).getString("url")));
 							}
 							client.requestAbs(HttpMethod.GET, "http://" + locations.getOnePublicUrl() + "/" + fid,
 									res -> {
-										
-										res.exceptionHandler(ex ->{
-											
-											handler.handle(Future.failedFuture(ex
-													));
 
-										});
-									if(res.statusCode() == 200){
-										res.bodyHandler(downFile ->{
-											handler.handle(Future.succeededFuture(downFile));
-										});
-									}else{
-										handler.handle(Future.failedFuture(
-												new IllegalArgumentException("sever error code " + res.statusMessage())));
-									}
+								res.exceptionHandler(ex -> {
+
+									handler.handle(Future.failedFuture(ex));
+
+								});
+								if (res.statusCode() == 200) {
+									res.bodyHandler(downFile -> {
+										handler.handle(Future.succeededFuture(downFile));
+									});
+								} else {
+									handler.handle(Future.failedFuture(
+											new IllegalArgumentException("sever error code " + res.statusMessage())));
+								}
 							}).end();
 
 						});
@@ -180,7 +179,6 @@ public class WeedFSClient {
 
 	}
 
-	
 	// /*
 	// * delete the file
 	// */
