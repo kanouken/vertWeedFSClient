@@ -79,7 +79,7 @@ public class WeedFSClient {
 								});
 							});
 							request.putHeader(HttpHeaders.Names.CONTENT_TYPE, HttpHeaders.Values.MULTIPART_FORM_DATA
-									+ "; " + HttpHeaders.Values.BOUNDARY + "=----------HV2ymHFg03ehbqgZCaKO6jyH");
+									+ "; " + HttpHeaders.Values.BOUNDARY + "=__X_ONEZERO_BOUNDARY__");
 							request.setChunked(true);
 							request.write(bulidBody(file)).end();
 						});
@@ -92,7 +92,7 @@ public class WeedFSClient {
 	public static Buffer bulidBody(Buffer file) {
 		// 头
 		Buffer buffer = Buffer.buffer();
-		String boundary = "----------HV2ymHFg03ehbqgZCaKO6jyH";
+		String boundary = "__X_ONEZERO_BOUNDARY__";
 		// 传输内容
 		StringBuffer contentBody = new StringBuffer("--" + boundary);
 		String endBoundary = "\r\n--" + boundary + "--\r\n";
@@ -116,8 +116,8 @@ public class WeedFSClient {
 				.appendString("\r\n\r\n");
 		// 开始真正向服务器写文件
 		buffer.appendBuffer(file);
-		buffer.appendString("------------HV2ymHFg03ehbqgZCaKO6jyH");
-		buffer.appendString("------------HV2ymHFg03ehbqgZCaKO6jyH--\r\n");
+		buffer.appendString("__X_ONEZERO_BOUNDARY__");
+		buffer.appendString("__X_ONEZERO_BOUNDARY__\r\n");
 
 		// 3. 写结尾
 		buffer.appendString(endBoundary);
